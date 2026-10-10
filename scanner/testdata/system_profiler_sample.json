@@ -1,0 +1,47 @@
+{
+  "SPAirPortDataType": [
+    {
+      "spairport_airport_interfaces": [
+        {
+          "_name": "en0",
+          "spairport_current_network_information": {
+            "_name": "HomeNetwork",
+            "spairport_network_type": "spairport_network_type_station",
+            "spairport_security_mode": "spairport_security_mode_wpa2_personal"
+          },
+          "spairport_airport_other_local_wireless_networks": [
+            {
+              "_name": "LIFX Bulb aabbcc",
+              "spairport_network_channel": "1 (2GHz, 20MHz)",
+              "spairport_network_phymode": "802.11b/g/n",
+              "spairport_network_type": "spairport_network_type_station",
+              "spairport_security_mode": "spairport_security_mode_open"
+            },
+            {
+              "_name": "LIFX-A19-112233",
+              "spairport_network_channel": "6 (2GHz, 20MHz)",
+              "spairport_network_phymode": "802.11b/g/n",
+              "spairport_network_type": "spairport_network_type_station",
+              "spairport_security_mode": "spairport_security_mode_open"
+            },
+            {
+              "_name": "NeighborWifi",
+              "spairport_network_channel": "11 (2GHz, 20MHz)",
+              "spairport_network_phymode": "802.11b/g/n",
+              "spairport_security_mode": "spairport_security_mode_wpa2_personal"
+            },
+            {
+              "_name": "<redacted>",
+              "spairport_network_channel": "1 (2GHz, 20MHz)",
+              "spairport_security_mode": "spairport_security_mode_wpa2_personal"
+            },
+            {
+              "_name": "LIFX Switch nothex",
+              "spairport_security_mode": "spairport_security_mode_open"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

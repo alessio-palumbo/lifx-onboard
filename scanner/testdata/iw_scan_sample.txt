@@ -1,0 +1,23 @@
+BSS d0:73:d5:aa:bb:cc(on wlan0)
+	TSF: 12345678 usec (0d, 00:00:12)
+	freq: 2412
+	beacon interval: 100 TUs
+	capability: ESS (0x0001)
+	signal: -54.00 dBm
+	last seen: 120 ms ago
+	SSID: LIFX Bulb aabbcc
+	Supported rates: 1.0* 2.0* 5.5* 11.0* 6.0 9.0 12.0 18.0
+BSS d0:73:d5:11:22:33(on wlan0)
+	freq: 2437
+	capability: ESS (0x0001)
+	signal: -67.00 dBm
+	SSID: LIFX-A19-112233
+BSS 00:11:22:33:44:55(on wlan0)
+	freq: 2462
+	capability: ESS Privacy (0x0411)
+	signal: -45.00 dBm
+	SSID: NeighborWifi
+BSS aa:bb:cc:dd:ee:ff(on wlan0)
+	freq: 2437
+	signal: -80.00 dBm
+	SSID: LIFX Switch nothex
