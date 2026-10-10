@@ -1,0 +1,10 @@
+# macOS app bundle built by scripts/bundle.sh
+/build/
+*.app/
+
+# Local binaries
+/lifx-onboard
+/softap_dial
+
+# macOS metadata
+.DS_Store
