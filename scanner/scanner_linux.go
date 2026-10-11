@@ -12,16 +12,16 @@ import (
 	"strings"
 )
 
-// IWScanner uses `iw <iface> scan` to enumerate visible WiFi APs. Reads
-// BSSID, SSID, and signal level. Requires the iw userspace tool to be
-// installed and the calling user to have permission to scan (CAP_NET_ADMIN
-// or root — typical on Linux desktops with NetworkManager).
+// IWScanner uses `iw dev <iface> scan` to enumerate visible WiFi APs. Reads
+// BSSID, SSID, and signal level. Requires the iw tool and permission to
+// scan (CAP_NET_ADMIN, usually root). NmcliScanner, the default, needs
+// neither.
 type IWScanner struct {
 	iface string
 }
 
-// NewIWScanner returns a scanner that runs `iw <iface> scan`. iface is
-// required.
+// NewIWScanner returns a scanner that runs `iw dev <iface> scan`. When
+// iface is empty the first wireless interface listed by `iw dev` is used.
 func NewIWScanner(iface string) *IWScanner {
 	return &IWScanner{iface: iface}
 }
@@ -31,10 +31,17 @@ func (s *IWScanner) Interface() string { return s.iface }
 
 // Scan invokes iw and parses its output.
 func (s *IWScanner) Scan(ctx context.Context, opts ScanOptions) ([]AP, error) {
-	if s.iface == "" {
-		return nil, fmt.Errorf("scanner: iw scan requires an interface name")
+	iface := s.iface
+	if iface == "" {
+		devs, err := exec.CommandContext(ctx, "iw", "dev").Output()
+		if err != nil {
+			return nil, fmt.Errorf("scanner: iw dev: %w", err)
+		}
+		if iface = firstIWInterface(string(devs)); iface == "" {
+			return nil, fmt.Errorf("scanner: no wireless interface found by iw dev")
+		}
 	}
-	cmd := exec.CommandContext(ctx, "iw", s.iface, "scan")
+	cmd := exec.CommandContext(ctx, "iw", "dev", iface, "scan")
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("scanner: iw scan: %w", err)
@@ -134,4 +141,14 @@ func parseBSSIDColon(s string) ([6]byte, bool) {
 		out[i] = byte(v)
 	}
 	return out, true
+}
+
+// firstIWInterface returns the first "Interface <name>" from `iw dev`.
+func firstIWInterface(out string) string {
+	for _, line := range strings.Split(out, "\n") {
+		if name, ok := strings.CutPrefix(strings.TrimSpace(line), "Interface "); ok {
+			return strings.TrimSpace(name)
+		}
+	}
+	return ""
 }

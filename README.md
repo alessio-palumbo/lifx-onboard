@@ -87,8 +87,8 @@ Security → Location Services).
 
 ## Linux
 
-Uses `iw` for scanning and NetworkManager (`nmcli`) for connecting. Both
-need to be installed; scanning with `iw` may need root.
+Requires NetworkManager (`nmcli`), the default on most desktop distributions
+and on Raspberry Pi OS Bookworm and later. No root needed.
 
 ## Using the library
 
