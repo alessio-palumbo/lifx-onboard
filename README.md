@@ -17,7 +17,7 @@ go install github.com/alessio-palumbo/lifx-onboard/cmd/lifx-onboard@latest   # C
 go get github.com/alessio-palumbo/lifx-onboard                               # library
 ```
 
-Requires Go 1.27+. Runs on macOS and Linux; Windows support is experimental.
+Requires Go 1.27+. Runs on macOS, Linux and Windows.
 
 On macOS, use the app bundle instead of the plain binary — see
 [macOS setup](#macos-setup).
@@ -90,7 +90,7 @@ Security → Location Services).
 Requires NetworkManager (`nmcli`), the default on most desktop distributions
 and on Raspberry Pi OS Bookworm and later. No root needed.
 
-## Windows (experimental)
+## Windows
 
 Uses the native Windows WiFi API, no extra tools. On Windows 11 24H2 and
 later, scanning needs Location access: Settings → Privacy & security →
