@@ -39,8 +39,7 @@ func (q *queuedScanner) Scan(context.Context, scanner.ScanOptions) ([]scanner.AP
 }
 func (q *queuedScanner) Interface() string { return "fake0" }
 
-// liveSender keeps a mutable set of serials that are "online." Test code
-// adds serials to simulate devices reappearing on the LAN.
+// liveSender reports a fixed set of serials as "online".
 type liveSender struct {
 	mu      sync.Mutex
 	serials map[device.Serial]bool
@@ -52,11 +51,6 @@ func newLiveSender(initial ...device.Serial) *liveSender {
 		s.serials[x] = true
 	}
 	return s
-}
-func (s *liveSender) add(serial device.Serial) {
-	s.mu.Lock()
-	s.serials[serial] = true
-	s.mu.Unlock()
 }
 func (s *liveSender) GetDevices() []device.Device {
 	s.mu.Lock()

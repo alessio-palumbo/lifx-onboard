@@ -1,0 +1,87 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  STATICCHECK_VERSION: "2026.2.2"
+
+jobs:
+  test:
+    name: Test ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos
+            os: macos-15
+          - name: linux
+            os: ubuntu-24.04
+          - name: windows
+            os: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Check formatting
+        if: runner.os == 'Linux'
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [[ -n "$unformatted" ]]; then
+            printf 'Go files need formatting:\n%s\n' "$unformatted"
+            exit 1
+          fi
+
+      - name: Check go.mod is tidy
+        if: runner.os == 'Linux'
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Vet with CoreWLAN
+        if: runner.os == 'macOS'
+        run: go vet -tags corewlan ./...
+
+      - name: Staticcheck
+        run: go run "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}" ./...
+
+      - name: Staticcheck with CoreWLAN
+        if: runner.os == 'macOS'
+        run: go run "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}" -tags corewlan ./...
+
+      - name: Test with race detector
+        if: runner.os != 'Windows'
+        run: go test -race ./...
+
+      - name: Test
+        if: runner.os == 'Windows'
+        run: go test ./...
+
+      - name: Build app bundle
+        if: runner.os == 'macOS'
+        run: ARCHS="arm64 amd64" scripts/bundle.sh

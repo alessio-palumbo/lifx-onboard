@@ -12,15 +12,22 @@ that the light has come online.
 
 ## Install
 
+Download the archive for your system from the
+[latest release](https://github.com/alessio-palumbo/lifx-onboard/releases/latest)
+and verify it against `SHA256SUMS`:
+
+- **macOS** — `darwin_universal.zip` contains `LifxOnboard.app`; see
+  [macOS setup](#macos-setup).
+- **Linux** — `linux_amd64`, `linux_arm64` or `linux_armv7` (32-bit
+  Raspberry Pi OS); put `lifx-onboard` on your `PATH`.
+- **Windows** — `windows_amd64` or `windows_arm64`; run `lifx-onboard.exe`.
+
+Or with Go 1.27+:
+
 ```sh
-go install github.com/alessio-palumbo/lifx-onboard/cmd/lifx-onboard@latest   # CLI
+go install github.com/alessio-palumbo/lifx-onboard/cmd/lifx-onboard@latest   # CLI (Linux, Windows)
 go get github.com/alessio-palumbo/lifx-onboard                               # library
 ```
-
-Requires Go 1.27+. Runs on macOS, Linux and Windows.
-
-On macOS, use the app bundle instead of the plain binary — see
-[macOS setup](#macos-setup).
 
 ## Usage
 
@@ -61,14 +68,16 @@ Good to know:
 ## macOS setup
 
 macOS only shows WiFi network names to apps it launched itself and that
-you've allowed to use Location Services. So on macOS, run lifx-onboard from
-its app bundle:
+you've allowed to use Location Services, so on macOS lifx-onboard runs from
+its app bundle. Move `LifxOnboard.app` from the release zip to
+`/Applications` and link the command onto your `PATH`:
 
 ```sh
-git clone https://github.com/alessio-palumbo/lifx-onboard && cd lifx-onboard
-scripts/bundle.sh                      # builds build/LifxOnboard.app
-ln -s "$PWD/build/LifxOnboard.app/Contents/MacOS/lifx-onboard" /usr/local/bin/lifx-onboard
+ln -s /Applications/LifxOnboard.app/Contents/MacOS/lifx-onboard /usr/local/bin/lifx-onboard
 ```
+
+To build the bundle from source instead: `scripts/bundle.sh` (creates
+`build/LifxOnboard.app`; `ARCHS="arm64 amd64"` for a universal build).
 
 You can still run it from your terminal as usual — it starts itself through
 the app behind the scenes. On first use, allow **LifxOnboard** when macOS
