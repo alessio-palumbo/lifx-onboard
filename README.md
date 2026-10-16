@@ -144,12 +144,19 @@ type LANSender interface {
 [lifxlan-go](https://github.com/alessio-palumbo/lifxlan-go)'s `Controller`
 satisfies it as-is.
 
-**macOS apps** using the library need, like the CLI, to be a proper app
-bundle: `NSLocationWhenInUseUsageDescription` and
-`NSLocalNetworkUsageDescription` in `Info.plist`, built with
-`-tags corewlan`, calling `onboard.RequestMacOSLocationAccess()` at
-startup. Sandboxed apps also need the `network.client`, `network.server`
-and `personal-information.location` entitlements.
+**macOS apps** using the library need what the CLI's bundle has (see
+`scripts/bundle.sh` and `scripts/entitlements.plist`):
+
+- `NSLocationWhenInUseUsageDescription` and `NSLocalNetworkUsageDescription`
+  in `Info.plist`;
+- the `com.apple.security.personal-information.location` entitlement when
+  signed with the hardened runtime (required for notarization) — without it
+  scans stay redacted even after the user allows Location;
+- a build with `-tags corewlan`, calling `onboard.RequestMacOSLocationAccess()`
+  at startup.
+
+Sandboxed apps also need the `com.apple.security.network.client` and
+`com.apple.security.network.server` entitlements.
 
 ## Protocol
 
