@@ -1,30 +1,46 @@
 #!/usr/bin/env bash
 #
-# Builds the lifx-onboard CLI as an ad-hoc signed .app bundle.
+# Builds the lifx-onboard CLI as a signed macOS app bundle, build/LifxOnboard.app.
 #
-# Background: on macOS, WiFi scan results (auto / bulk / scan with the
-# corewlan scanner) are redacted unless the process has Location Services,
-# and that grant is keyed to a code-signed bundle identity. The `ssid`
-# command does not scan and does not need the bundle.
+# macOS only reveals WiFi network names to a process that LaunchServices
+# launched as an app and that has Location Services; the CLI relaunches
+# itself through this bundle to get there. See the README's macOS section.
 #
 # Usage:
 #
-#   scripts/bundle.sh                  # builds build/LifxOnboard.app (corewlan)
-#   TAGS= scripts/bundle.sh            # build without the corewlan cgo scanner
-#   build/LifxOnboard.app/Contents/MacOS/lifx-onboard ssid "LIFX A19 228447" --home-ssid MyNet
+#   scripts/bundle.sh                         # host architecture, ad-hoc signed
+#   ARCHS="arm64 amd64" scripts/bundle.sh     # universal binary
 #
-# The first network access triggers the Local Network prompt (and, for
-# auto/bulk/scan with corewlan, the Location Services prompt) — click
-# Allow. Rebuilding into the same bundle keeps the grants.
+# Environment:
+#
+#   ARCHS          Go architectures to build (default: host); several → lipo'd
+#   VERSION        version string, e.g. v0.2.0 (default: dev)
+#   SIGN_IDENTITY  codesign identity (default: "-", ad-hoc). A Developer ID
+#                  identity also enables the hardened runtime, as required
+#                  for notarization.
+#   TAGS           Go build tags (default: corewlan)
+#   OUT_DIR        output directory (default: build)
 
 set -euo pipefail
 
 APP_NAME="LifxOnboard"
 EXE_NAME="lifx-onboard"
-TAGS="${TAGS-corewlan}"
+BUNDLE_ID="com.alessiopalumbo.lifx-onboard"
 MODULE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BUNDLE_DIR="${MODULE_ROOT}/build/${APP_NAME}.app"
+
+ARCHS="${ARCHS:-$(go env GOARCH)}"
+VERSION="${VERSION:-dev}"
+SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+TAGS="${TAGS-corewlan}"
+OUT_DIR="${OUT_DIR:-${MODULE_ROOT}/build}"
+
+BUNDLE_DIR="${OUT_DIR}/${APP_NAME}.app"
 EXE_PATH="${BUNDLE_DIR}/Contents/MacOS/${EXE_NAME}"
+ENTITLEMENTS="${MODULE_ROOT}/scripts/entitlements.plist"
+
+# CFBundleShortVersionString must be numeric: v0.2.0 → 0.2.0, dev → 0.0.0.
+SHORT_VERSION="${VERSION#v}"
+[[ "$SHORT_VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]] || SHORT_VERSION="0.0.0"
 
 rm -rf "${BUNDLE_DIR}"
 mkdir -p "${BUNDLE_DIR}/Contents/MacOS"
@@ -37,37 +53,59 @@ cat > "${BUNDLE_DIR}/Contents/Info.plist" <<EOF
     <key>CFBundleExecutable</key>
     <string>${EXE_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>dev.lifx-onboard.cli</string>
+    <string>${BUNDLE_ID}</string>
     <key>CFBundleName</key>
     <string>${APP_NAME}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>${SHORT_VERSION}</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>${SHORT_VERSION}</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>Connect to a LIFX device in SoftAP mode at 172.16.0.1 to deliver home WiFi credentials, then find it on the home network.</string>
+    <string>Connect to a LIFX light in setup mode to give it your WiFi details, then find it on your network.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>The list of nearby WiFi networks is needed to locate LIFX SoftAP devices during onboarding.</string>
+    <string>macOS requires Location access to list nearby WiFi networks, which is how lifx-onboard finds LIFX lights in setup mode.</string>
 </dict>
 </plist>
 EOF
 
 cd "${MODULE_ROOT}"
-go build -tags "${TAGS}" -o "${EXE_PATH}" ./cmd/lifx-onboard
+build_dir="$(mktemp -d)"
+trap 'rm -rf "$build_dir"' EXIT
+slices=()
+for arch in ${ARCHS}; do
+  CGO_ENABLED=1 GOOS=darwin GOARCH="$arch" go build \
+    -trimpath -tags "${TAGS}" \
+    -ldflags "-s -w -X main.version=${VERSION}" \
+    -o "${build_dir}/${EXE_NAME}-${arch}" ./cmd/lifx-onboard
+  slices+=("${build_dir}/${EXE_NAME}-${arch}")
+done
+if (( ${#slices[@]} > 1 )); then
+  lipo -create -output "${EXE_PATH}" "${slices[@]}"
+else
+  cp "${slices[0]}" "${EXE_PATH}"
+fi
 
-codesign --force --deep --sign - "${BUNDLE_DIR}"
+if [[ "${SIGN_IDENTITY}" == "-" ]]; then
+  codesign --force --sign - --entitlements "${ENTITLEMENTS}" "${BUNDLE_DIR}"
+else
+  codesign --force --options runtime --timestamp \
+    --entitlements "${ENTITLEMENTS}" \
+    --sign "${SIGN_IDENTITY}" "${BUNDLE_DIR}"
+fi
+codesign --verify --strict --verbose=2 "${BUNDLE_DIR}"
 
 cat <<EOF
 
-Built ${BUNDLE_DIR}
+Built ${BUNDLE_DIR} (${ARCHS}, ${VERSION})
 
-Run it directly from the bundle:
-  ${EXE_PATH} ssid "LIFX A19 228447" --home-ssid MyNet
-
-Or put it on your PATH:
+Run it from the bundle, or put it on your PATH:
   ln -sf "${EXE_PATH}" /usr/local/bin/${EXE_NAME}
 
-The first run triggers the macOS Local Network prompt — click Allow.
+On first use allow LifxOnboard when macOS asks for Location access.
 EOF

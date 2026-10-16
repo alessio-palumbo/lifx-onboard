@@ -41,6 +41,9 @@ const (
 	exitInterrupted = 130
 )
 
+// version is set at release build time via -ldflags "-X main.version=...".
+var version = "dev"
+
 type command struct {
 	name    string
 	summary string
@@ -72,6 +75,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case "-h", "-help", "--help", "help":
 		usage(stdout)
 		return exitOK
+	case "--version", "version":
+		fmt.Fprintln(stdout, "lifx-onboard", version)
+		return exitOK
 	}
 	for _, c := range commands {
 		if c.name == args[0] {
@@ -91,7 +97,7 @@ func usage(w io.Writer) {
 		fmt.Fprintf(w, "  %-6s %s\n", c.name, c.summary)
 	}
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Run 'lifx-onboard <command> -h' for command flags.")
+	fmt.Fprintln(w, "Run 'lifx-onboard <command> -h' for command flags, 'lifx-onboard --version' for the version.")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Environment:")
 	fmt.Fprintln(w, "  LIFX_ONBOARD_SSID             default for --home-ssid")

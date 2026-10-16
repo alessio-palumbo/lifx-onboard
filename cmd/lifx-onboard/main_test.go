@@ -27,6 +27,7 @@ func TestRunDispatch(t *testing.T) {
 	}{
 		{"no args", nil, exitUsage, "", "Usage: lifx-onboard"},
 		{"help", []string{"--help"}, exitOK, "Commands:", ""},
+		{"version", []string{"--version"}, exitOK, "lifx-onboard dev", ""},
 		{"unknown", []string{"frobnicate"}, exitUsage, "", `unknown command "frobnicate"`},
 		{"subcommand help", []string{"ssid", "-h"}, exitOK, "", "Usage: lifx-onboard ssid"},
 		{"bad flag", []string{"ssid", "--nope"}, exitUsage, "", "flag provided but not defined"},
