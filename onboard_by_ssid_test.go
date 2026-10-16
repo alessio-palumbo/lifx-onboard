@@ -23,6 +23,7 @@ func bySSIDBaseOpts() OnboardBySSIDOptions {
 		Options: Options{
 			SSID:         "home",
 			Password:     "secret",
+			Scanner:      &fakeScanner{}, // never the platform scanner in tests
 			FindTimeout:  30 * time.Millisecond,
 			FindPoll:     time.Millisecond,
 			AutoJoinWait: -1,

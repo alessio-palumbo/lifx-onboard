@@ -122,7 +122,8 @@ func baseOpts() Options {
 	return Options{
 		SSID:          "home",
 		Password:      "secret",
-		VerifyTimeout: 0, // skip verify by default
+		VerifyTimeout: 0,              // skip verify by default
+		Scanner:       &fakeScanner{}, // never the platform scanner in tests
 		FindTimeout:   30 * time.Millisecond,
 		FindPoll:      time.Millisecond,
 		AutoJoinWait:  -1,

@@ -380,3 +380,39 @@ func TestOnboardBySSID_KeepsNetworkTheOSChose(t *testing.T) {
 		t.Errorf("EventRejoined SSID = %q, want Other_Known_Network", rejoined)
 	}
 }
+
+// systemScanner stands in for a platform scanner that also implements the
+// optional network interfaces (as the Windows WLAN client does). It must
+// never be used for them when the Joiner provides them.
+type systemScanner struct {
+	fakeScanner
+	used []string
+}
+
+func (s *systemScanner) CurrentSSID(context.Context) (string, error) {
+	s.used = append(s.used, "CurrentSSID")
+	return "System_Network", nil
+}
+
+func (s *systemScanner) Disassociate(context.Context) error {
+	s.used = append(s.used, "Disassociate")
+	return nil
+}
+
+func TestOnboardBySSID_PrefersJoinerOverScannerForNetworkState(t *testing.T) {
+	scn := &systemScanner{}
+	jnr := &networkJoiner{current: "My_Network_5G"}
+	opts := bySSIDBaseOpts()
+	opts.Scanner = scn
+	opts.Joiner = jnr
+
+	if _, err := onboardBySSIDWith(context.Background(), opts, newDialer(&fakeConn{}, nil), fakeWait(nil)); err != nil {
+		t.Fatalf("OnboardBySSID: %v", err)
+	}
+	if len(scn.used) != 0 {
+		t.Errorf("scanner used for %v; the Joiner implements those and must win", scn.used)
+	}
+	if jnr.disassociated != 1 {
+		t.Errorf("Joiner.Disassociate called %d times, want 1", jnr.disassociated)
+	}
+}

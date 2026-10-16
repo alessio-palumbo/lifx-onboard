@@ -7,6 +7,14 @@ import (
 	"github.com/alessio-palumbo/lifx-onboard/scanner"
 )
 
+// wifiBackends lists where to look for the optional network interfaces
+// (scanner.CurrentNetworkReporter, scanner.Disassociator): the Joiner first,
+// since it owns the WiFi association, so a caller-supplied Joiner wins over
+// a default platform Scanner that happens to implement them too.
+func wifiBackends(opts *Options) []any {
+	return []any{opts.Joiner, opts.Scanner}
+}
+
 // rejoinTarget is a network the host can rejoin after the handoff.
 type rejoinTarget struct {
 	ssid, password string
@@ -18,7 +26,7 @@ type rejoinTarget struct {
 // canReadCurrentSSID reports whether the Scanner or Joiner can report the
 // host's current network.
 func canReadCurrentSSID(opts *Options) bool {
-	for _, c := range []any{opts.Scanner, opts.Joiner} {
+	for _, c := range wifiBackends(opts) {
 		if _, ok := c.(scanner.CurrentNetworkReporter); ok {
 			return true
 		}
@@ -63,7 +71,7 @@ func waitForAutoJoin(ctx context.Context, opts *Options, ssid, softAP string) (s
 // scanner.CurrentNetworkReporter for the host's current network. Returns ""
 // when unknown.
 func currentSSID(ctx context.Context, opts *Options) string {
-	for _, c := range []any{opts.Scanner, opts.Joiner} {
+	for _, c := range wifiBackends(opts) {
 		r, ok := c.(scanner.CurrentNetworkReporter)
 		if !ok {
 			continue
@@ -146,7 +154,7 @@ func leaveSoftAP(ctx context.Context, opts *Options, ap scanner.AP) {
 		logger(opts.Logger).Debug("not on device SoftAP, not disconnecting", "ssid", ap.SSID, "current", cur)
 		return
 	}
-	for _, c := range []any{opts.Scanner, opts.Joiner} {
+	for _, c := range wifiBackends(opts) {
 		d, ok := c.(scanner.Disassociator)
 		if !ok {
 			continue
